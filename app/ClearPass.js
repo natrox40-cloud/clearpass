@@ -224,20 +224,37 @@ Rules:
 
   async function runAi(text, detected) {
     setAiLoading(true);
+    const highList = detected.filter(d => d.risk === "high").map(d => d.name).join(", ");
+    const medList = detected.filter(d => d.risk === "med").map(d => d.name).join(", ");
     try {
       const res = await fetch("/api/claude", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514", max_tokens: 800,
-          messages: [{ role: "user", content: `You are a Korean MFDS customs expert. Analyze these suspected ingredients found in a product: [${detected.map(d=>d.name).join(", ")}]. Product text: ${text.substring(0,1500)}. For each, determine if it's a real risk or false alarm (e.g. "pea" in "pea protein"). Reply in Korean only, format:
+          messages: [{ role: "user", content: `당신은 한국 식약처(MFDS) 해외직구 위해식품 통관 전문가입니다.
+
+중요 규칙:
+1. 아래 성분들은 한국 식약처 "해외직구 위해식품 차단 목록"에 실제 등재된 금지/주의 성분입니다.
+2. 해외에서는 일반 보충제로 판매되더라도, 한국 통관 기준으로는 금지입니다.
+3. 1차 매칭에서 검출된 성분을 "안전하다"고 뒤집으려면, 반드시 해당 성분명이 다른 단어의 일부(예: "pea"가 "pea protein"의 일부)인 경우에만 가능합니다.
+4. L-Citrulline, Melatonin, 5-HTP, Yohimbine 등은 해외에서 일반적이지만 한국에서는 금지 성분입니다. 이런 성분을 "안전"으로 분류하지 마세요.
+
+[위험 등급 성분 (통관 차단 대상)]: ${highList || "없음"}
+[주의 등급 성분 (통관 주의 대상)]: ${medList || "없음"}
+
+[제품 성분 텍스트]:
+${text.substring(0,1500)}
+
+아래 양식으로만 한국어로 답변하세요:
 
 🔍 AI 정밀 판독
 
 [위험 성분]
-• 성분명 — 사유 (1줄)
+• 성분명 — 한국 식약처 기준 금지/주의 사유 (1줄)
 
-[안전 (가짜 알람)]
-• 성분명 — 사유 (1줄)
+[가짜 알람 (안전)]
+• 성분명 — 다른 단어의 일부이므로 안전 (1줄)
+(해당 없으면 "없음"으로 표시)
 
 [종합]
 통관 위험도: 높음/중간/낮음
