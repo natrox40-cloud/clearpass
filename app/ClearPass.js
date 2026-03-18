@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-
+ 
 /* ─── Banned ingredient database (extracted from 4,631 real MFDS records) ─── */
 const BANNED = [
   "1-androstenedione","3b-hydroxy-androst-1-ene-17-one","5-htp","5-hydroxytryptophan",
@@ -35,7 +35,7 @@ const HIGH = new Set(["sildenafil","tadalafil","sibutramine","s4","andarine","sr
   "prednisolone","desoxy-d2pm","orlistat","phenolphthaleine","hhc",
   "mitragynine","mitragyna speciosa","dexamethasone","diclofenac","bisacodyl","lidocaine",
   "chlorpheniramine","클로람페니콜","디폭세틴"]);
-
+ 
 function detect(text) {
   if (!text?.trim()) return [];
   const lower = text.toLowerCase();
@@ -49,7 +49,7 @@ function detect(text) {
   }
   return found.filter((f,i) => !found.some((o,j) => i!==j && o.name.length > f.name.length && o.name.includes(f.name)));
 }
-
+ 
 /* ─── Animated counter ─── */
 function Counter({ end, duration = 2000, suffix = "" }) {
   const [val, setVal] = useState(0);
@@ -72,7 +72,7 @@ function Counter({ end, duration = 2000, suffix = "" }) {
   }, [end, duration]);
   return <span ref={ref}>{val.toLocaleString()}{suffix}</span>;
 }
-
+ 
 /* ─── Main App ─── */
 export default function App() {
   const [page, setPage] = useState("home");
@@ -83,14 +83,99 @@ export default function App() {
   const [analyzing, setAnalyzing] = useState(false);
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-
+  /* ─── Image upload state ─── */
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageExtracting, setImageExtracting] = useState(false);
+  const [imageExtracted, setImageExtracted] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [inputMode, setInputMode] = useState("text"); // "text" or "image"
+  const fileInputRef = useRef(null);
+ 
   const countries = [
     { code: "kr", name: "한국", flag: "🇰🇷", active: true },
     { code: "jp", name: "日本", flag: "🇯🇵", active: false },
     { code: "us", name: "USA", flag: "🇺🇸", active: false },
     { code: "eu", name: "EU", flag: "🇪🇺", active: false },
   ];
-
+ 
+  /* ─── Image handling ─── */
+  function handleImageSelect(file) {
+    if (!file || !file.type.startsWith("image/")) return;
+    setImageFile(file);
+    setImageExtracted(false);
+    setIngredients("");
+    const reader = new FileReader();
+    reader.onload = (e) => setImagePreview(e.target.result);
+    reader.readAsDataURL(file);
+  }
+ 
+  function handleDrop(e) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    handleImageSelect(file);
+  }
+ 
+  function removeImage() {
+    setImageFile(null);
+    setImagePreview(null);
+    setImageExtracted(false);
+    setIngredients("");
+  }
+ 
+  async function extractFromImage() {
+    if (!imagePreview) return;
+    setImageExtracting(true);
+    try {
+      const base64Data = imagePreview.split(",")[1];
+      const mediaType = imageFile.type || "image/jpeg";
+      
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1500,
+          messages: [{
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: { type: "base64", media_type: mediaType, data: base64Data }
+              },
+              {
+                type: "text",
+                text: `This is a supplement/food product label image. Extract ALL ingredient text visible in this image. Include everything: ingredient names, amounts, percentages, "Other Ingredients", warnings about contents.
+ 
+Rules:
+- Output ONLY the extracted text, nothing else
+- Keep original language (English, Korean, Japanese, etc.)
+- Keep original formatting as much as possible
+- If you see "Supplement Facts" or "Nutrition Facts" or similar header, include everything under it
+- If no ingredient information is found, respond with: NO_INGREDIENTS_FOUND`
+              }
+            ],
+          }],
+        }),
+      });
+      
+      const data = await res.json();
+      const text = data.content?.map(c => c.text || "").join("\n") || "";
+      
+      if (text.includes("NO_INGREDIENTS_FOUND")) {
+        setIngredients("");
+        alert("이미지에서 성분 정보를 찾을 수 없습니다. 다른 이미지를 시도해주세요.");
+      } else {
+        setIngredients(text);
+        setImageExtracted(true);
+      }
+    } catch (err) {
+      alert("이미지 분석 중 오류가 발생했습니다. 다시 시도해주세요.");
+    }
+    setImageExtracting(false);
+  }
+ 
   function runCheck() {
     if (!ingredients.trim() && !productName.trim()) return;
     setAnalyzing(true);
@@ -104,12 +189,13 @@ export default function App() {
         detected: d, high, med,
         level: high.length > 0 ? "danger" : med.length > 0 ? "warning" : "safe",
         time: new Date().toLocaleString("ko-KR"),
+        fromImage: inputMode === "image" && imageExtracted,
       });
       setAnalyzing(false);
       if (d.length > 0) runAi(ingredients, d);
     }, 600);
   }
-
+ 
   async function runAi(text, detected) {
     setAiLoading(true);
     try {
@@ -118,15 +204,15 @@ export default function App() {
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514", max_tokens: 800,
           messages: [{ role: "user", content: `You are a Korean MFDS customs expert. Analyze these suspected ingredients found in a product: [${detected.map(d=>d.name).join(", ")}]. Product text: ${text.substring(0,1500)}. For each, determine if it's a real risk or false alarm (e.g. "pea" in "pea protein"). Reply in Korean only, format:
-
+ 
 🔍 AI 정밀 판독
-
+ 
 [위험 성분]
 • 성분명 — 사유 (1줄)
-
+ 
 [안전 (가짜 알람)]
 • 성분명 — 사유 (1줄)
-
+ 
 [종합]
 통관 위험도: 높음/중간/낮음
 근거: (1줄)` }],
@@ -137,11 +223,11 @@ export default function App() {
     } catch { setAiText("⚠️ AI 연결 실패 — 1차 매칭 결과를 참고하세요."); }
     setAiLoading(false);
   }
-
+ 
   const R = { danger: { bg: "#1C0A0A", border: "#DC2626", accent: "#EF4444", text: "#FCA5A5", badge: "🚨 위험", badgeBg: "#991B1B" },
     warning: { bg: "#1A1506", border: "#D97706", accent: "#F59E0B", text: "#FDE68A", badge: "⚠️ 주의", badgeBg: "#92400E" },
     safe: { bg: "#061A0E", border: "#059669", accent: "#10B981", text: "#6EE7B7", badge: "✅ 안전", badgeBg: "#065F46" }};
-
+ 
   /* ─── Styles ─── */
   const css = `
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap');
@@ -153,6 +239,7 @@ export default function App() {
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
     @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
     @keyframes glow { 0%,100%{box-shadow:0 0 20px rgba(79,143,255,0.15)} 50%{box-shadow:0 0 40px rgba(79,143,255,0.3)} }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
     .fade-up { animation: fadeUp .6s ease both }
     .fade-up-1 { animation-delay: .1s }
     .fade-up-2 { animation-delay: .2s }
@@ -166,14 +253,12 @@ export default function App() {
     .grain { position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:.03;
       background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E") }
   `;
-
+ 
   /* ─── LANDING PAGE ─── */
   if (page === "home") return (
     <div style={{ fontFamily: "'Outfit', 'Noto Sans KR', sans-serif", minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
       <style>{css}</style>
       <div className="grain" />
-
-      {/* Nav */}
       <nav style={{ position:"sticky", top:0, zIndex:50, background:"rgba(8,9,14,0.85)", backdropFilter:"blur(20px)", borderBottom:"1px solid var(--border)", padding:"0 24px" }}>
         <div style={{ maxWidth:1080, margin:"0 auto", display:"flex", justifyContent:"space-between", alignItems:"center", height:60 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -185,8 +270,7 @@ export default function App() {
           </div>
         </div>
       </nav>
-
-      {/* Hero */}
+ 
       <section style={{ maxWidth:1080, margin:"0 auto", padding:"100px 24px 80px", textAlign:"center" }}>
         <div className="fade-up" style={{ display:"inline-block", padding:"6px 16px", borderRadius:20, background:"rgba(79,143,255,0.08)", border:"1px solid rgba(79,143,255,0.15)", fontSize:13, color:"var(--accent)", fontWeight:500, marginBottom:24 }}>
           식약처 위해식품 DB 4,631건 기반
@@ -195,9 +279,9 @@ export default function App() {
           해외 직구 제품,<br/>
           <span style={{ background:"linear-gradient(135deg, #4F8FFF 0%, #818CF8 50%, #C084FC 100%)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>통관 전에 확인하세요</span>
         </h1>
-        <p className="fade-up fade-up-2" style={{ fontSize:17, color:"var(--text2)", maxWidth:520, margin:"0 auto 40px", lineHeight:1.7 }}>
-          성분 텍스트를 붙여넣으면 AI가 금지 성분을 자동으로 탐지하고,<br/>
-          통관 차단 위험도를 즉시 판정합니다.
+        <p className="fade-up fade-up-2" style={{ fontSize:17, color:"var(--text2)", maxWidth:560, margin:"0 auto 40px", lineHeight:1.7 }}>
+          성분표 사진을 올리거나 텍스트를 붙여넣으면<br/>
+          AI가 금지 성분을 자동 탐지하고 통관 위험도를 즉시 판정합니다.
         </p>
         <div className="fade-up fade-up-3" style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
           <button onClick={() => setPage("check")} style={{ padding:"14px 36px", borderRadius:10, border:"none", background:"linear-gradient(135deg, #4F8FFF, #2563EB)", color:"#fff", fontSize:16, fontWeight:700, boxShadow:"0 4px 24px rgba(79,143,255,0.3)" }}>
@@ -207,8 +291,6 @@ export default function App() {
             요금 안내
           </button>
         </div>
-
-        {/* Country badges */}
         <div className="fade-up fade-up-4" style={{ display:"flex", gap:10, justifyContent:"center", marginTop:40 }}>
           {countries.map(c => (
             <div key={c.code} style={{ padding:"8px 16px", borderRadius:20, background: c.active ? "rgba(79,143,255,0.08)" : "var(--surface)", border:`1px solid ${c.active ? "rgba(79,143,255,0.2)" : "var(--border)"}`, fontSize:13, fontWeight:500, color: c.active ? "var(--accent)" : "var(--text2)", opacity: c.active ? 1 : 0.5 }}>
@@ -217,8 +299,7 @@ export default function App() {
           ))}
         </div>
       </section>
-
-      {/* Stats */}
+ 
       <section style={{ maxWidth:1080, margin:"0 auto", padding:"0 24px 80px" }}>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))", gap:16 }}>
           {[
@@ -234,15 +315,14 @@ export default function App() {
           ))}
         </div>
       </section>
-
-      {/* How it works */}
+ 
       <section style={{ maxWidth:1080, margin:"0 auto", padding:"0 24px 100px" }}>
         <h2 style={{ fontSize:28, fontWeight:800, textAlign:"center", marginBottom:48, letterSpacing:"-0.02em" }}>어떻게 작동하나요?</h2>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:20 }}>
           {[
-            { step: "01", title: "성분 입력", desc: "제품 상세 페이지에서 성분표를 복사해 붙여넣기", color: "#4F8FFF" },
-            { step: "02", title: "1차 스캔", desc: "157개 금지 성분 데이터베이스와 자동 대조", color: "#818CF8" },
-            { step: "03", title: "AI 정밀 분석", desc: "문맥을 읽고 가짜 알람을 걸러내는 AI 판독", color: "#C084FC" },
+            { step: "01", title: "성분 입력", desc: "텍스트를 붙여넣거나 성분표 사진을 업로드", color: "#4F8FFF" },
+            { step: "02", title: "이미지 판독", desc: "AI가 사진 속 성분표 텍스트를 자동 추출", color: "#818CF8" },
+            { step: "03", title: "위험 성분 스캔", desc: "157개 금지 성분 DB와 자동 대조 + AI 분석", color: "#C084FC" },
             { step: "04", title: "판정 리포트", desc: "위험도 등급과 근거가 포함된 즉시 결과 제공", color: "#F472B6" },
           ].map((s, i) => (
             <div key={i} style={{ padding:28, borderRadius:16, background:"var(--surface)", border:"1px solid var(--border)", position:"relative", overflow:"hidden" }}>
@@ -254,25 +334,23 @@ export default function App() {
           ))}
         </div>
       </section>
-
-      {/* CTA */}
+ 
       <section style={{ maxWidth:600, margin:"0 auto", padding:"0 24px 100px", textAlign:"center" }}>
         <div style={{ padding:48, borderRadius:20, background:"linear-gradient(135deg, rgba(79,143,255,0.06), rgba(129,140,248,0.06))", border:"1px solid rgba(79,143,255,0.12)" }}>
           <h2 style={{ fontSize:24, fontWeight:800, marginBottom:12 }}>지금 바로 확인해보세요</h2>
-          <p style={{ fontSize:14, color:"var(--text2)", marginBottom:24 }}>무료 체험 3건 제공 · 가입 불필요</p>
+          <p style={{ fontSize:14, color:"var(--text2)", marginBottom:24 }}>무료 체험 3건 제공 · 가입 불필요 · 이미지 판독 지원</p>
           <button onClick={() => setPage("check")} style={{ padding:"14px 40px", borderRadius:10, border:"none", background:"linear-gradient(135deg, #4F8FFF, #2563EB)", color:"#fff", fontSize:16, fontWeight:700 }}>
             판독 시작 →
           </button>
         </div>
       </section>
-
-      {/* Footer */}
+ 
       <footer style={{ borderTop:"1px solid var(--border)", padding:"24px", textAlign:"center", fontSize:11, color:"var(--text2)" }}>
         <p>© 2026 ClearPass · 식품안전나라 해외직구 위해식품 차단 목록 기반 · 본 결과는 참고용이며 최종 통관 여부는 세관 판단에 따릅니다</p>
       </footer>
     </div>
   );
-
+ 
   /* ─── PRICING PAGE ─── */
   if (page === "pricing") return (
     <div style={{ fontFamily: "'Outfit', 'Noto Sans KR', sans-serif", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
@@ -308,13 +386,13 @@ export default function App() {
       </section>
     </div>
   );
-
+ 
   /* ─── CHECK PAGE ─── */
   return (
     <div style={{ fontFamily:"'Outfit','Noto Sans KR',sans-serif", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
       <style>{css}</style>
       <div className="grain" />
-
+ 
       <nav style={{ position:"sticky", top:0, zIndex:50, background:"rgba(8,9,14,0.85)", backdropFilter:"blur(20px)", borderBottom:"1px solid var(--border)", padding:"0 24px" }}>
         <div style={{ maxWidth:760, margin:"0 auto", display:"flex", justifyContent:"space-between", alignItems:"center", height:60 }}>
           <button onClick={() => setPage("home")} style={{ display:"flex", alignItems:"center", gap:10, background:"none", border:"none", color:"var(--text)" }}>
@@ -333,45 +411,147 @@ export default function App() {
           </div>
         </div>
       </nav>
-
+ 
       <div style={{ maxWidth:760, margin:"0 auto", padding:"32px 16px" }}>
         {/* Input */}
         <div className="fade-up" style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:16, padding:24, marginBottom:20 }}>
+          {/* Product name */}
           <div style={{ marginBottom:16 }}>
             <label style={{ display:"block", fontSize:12, fontWeight:600, color:"var(--text2)", marginBottom:6, letterSpacing:"0.04em", textTransform:"uppercase" }}>제품명</label>
             <input type="text" placeholder="예: Hardon Blue, NOW Foods Omega-3" value={productName} onChange={e => setProductName(e.target.value)}
               style={{ width:"100%", padding:"12px 16px", borderRadius:10, background:"var(--bg)", border:"1px solid var(--border)", color:"var(--text)", fontSize:15, boxSizing:"border-box" }} />
           </div>
-          <div style={{ marginBottom:20 }}>
-            <label style={{ display:"block", fontSize:12, fontWeight:600, color:"var(--text2)", marginBottom:6, letterSpacing:"0.04em", textTransform:"uppercase" }}>성분 텍스트</label>
-            <textarea placeholder="제품 상세페이지에서 Supplement Facts / 성분표를 복사해서 붙여넣으세요..." value={ingredients} onChange={e => setIngredients(e.target.value)} rows={7}
-              style={{ width:"100%", padding:"12px 16px", borderRadius:10, background:"var(--bg)", border:"1px solid var(--border)", color:"var(--text)", fontSize:14, lineHeight:1.7, resize:"vertical", boxSizing:"border-box" }} />
+ 
+          {/* Input mode toggle */}
+          <div style={{ display:"flex", gap:4, marginBottom:16, background:"var(--bg)", borderRadius:10, padding:4 }}>
+            <button onClick={() => setInputMode("text")} style={{
+              flex:1, padding:"10px", borderRadius:8, border:"none", fontSize:13, fontWeight:600,
+              background: inputMode === "text" ? "rgba(79,143,255,0.15)" : "transparent",
+              color: inputMode === "text" ? "var(--accent)" : "var(--text2)",
+            }}>📝 텍스트 입력</button>
+            <button onClick={() => setInputMode("image")} style={{
+              flex:1, padding:"10px", borderRadius:8, border:"none", fontSize:13, fontWeight:600,
+              background: inputMode === "image" ? "rgba(79,143,255,0.15)" : "transparent",
+              color: inputMode === "image" ? "var(--accent)" : "var(--text2)",
+            }}>📷 이미지 판독</button>
           </div>
+ 
+          {/* Text input mode */}
+          {inputMode === "text" && (
+            <div style={{ marginBottom:20 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:600, color:"var(--text2)", marginBottom:6, letterSpacing:"0.04em", textTransform:"uppercase" }}>성분 텍스트</label>
+              <textarea placeholder="제품 상세페이지에서 Supplement Facts / 성분표를 복사해서 붙여넣으세요..." value={ingredients} onChange={e => setIngredients(e.target.value)} rows={7}
+                style={{ width:"100%", padding:"12px 16px", borderRadius:10, background:"var(--bg)", border:"1px solid var(--border)", color:"var(--text)", fontSize:14, lineHeight:1.7, resize:"vertical", boxSizing:"border-box" }} />
+            </div>
+          )}
+ 
+          {/* Image input mode */}
+          {inputMode === "image" && (
+            <div style={{ marginBottom:20 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:600, color:"var(--text2)", marginBottom:6, letterSpacing:"0.04em", textTransform:"uppercase" }}>성분표 이미지</label>
+              
+              {!imagePreview ? (
+                /* Drop zone */
+                <div
+                  onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    padding:"40px 20px", borderRadius:12,
+                    border: `2px dashed ${dragOver ? "var(--accent)" : "rgba(255,255,255,0.1)"}`,
+                    background: dragOver ? "rgba(79,143,255,0.05)" : "var(--bg)",
+                    textAlign:"center", cursor:"pointer",
+                    transition:"all 0.2s ease",
+                  }}
+                >
+                  <div style={{ fontSize:40, marginBottom:12 }}>📸</div>
+                  <p style={{ fontSize:14, fontWeight:600, color: dragOver ? "var(--accent)" : "var(--text)", marginBottom:4 }}>
+                    성분표 사진을 여기에 드래그하거나 클릭해서 업로드
+                  </p>
+                  <p style={{ fontSize:12, color:"var(--text2)" }}>
+                    JPG, PNG, WebP 지원 · Supplement Facts / 성분표 / 영양정보
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display:"none" }}
+                    onChange={e => handleImageSelect(e.target.files[0])}
+                  />
+                </div>
+              ) : (
+                /* Image preview + extract */
+                <div style={{ borderRadius:12, border:"1px solid var(--border)", overflow:"hidden", background:"var(--bg)" }}>
+                  <div style={{ position:"relative" }}>
+                    <img src={imagePreview} alt="Uploaded" style={{ width:"100%", maxHeight:300, objectFit:"contain", display:"block", background:"#000" }} />
+                    <button onClick={removeImage} style={{
+                      position:"absolute", top:8, right:8, width:28, height:28, borderRadius:14,
+                      background:"rgba(0,0,0,0.7)", border:"none", color:"#fff", fontSize:14,
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                    }}>✕</button>
+                  </div>
+                  
+                  {!imageExtracted && (
+                    <div style={{ padding:16, borderTop:"1px solid var(--border)" }}>
+                      <button onClick={extractFromImage} disabled={imageExtracting}
+                        style={{
+                          width:"100%", padding:"12px", borderRadius:8, border:"none",
+                          background: imageExtracting ? "#1E293B" : "linear-gradient(135deg, #818CF8, #6366F1)",
+                          color:"#fff", fontSize:14, fontWeight:700,
+                          opacity: imageExtracting ? 0.7 : 1,
+                        }}>
+                        {imageExtracting ? (
+                          <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                            <span style={{ display:"inline-block", width:16, height:16, border:"2px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", borderRadius:"50%", animation:"spin 0.8s linear infinite" }}></span>
+                            AI가 성분표를 읽고 있습니다...
+                          </span>
+                        ) : "🔬 AI 성분 추출 시작"}
+                      </button>
+                    </div>
+                  )}
+ 
+                  {imageExtracted && (
+                    <div style={{ padding:16, borderTop:"1px solid var(--border)" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+                        <span style={{ color:"#6EE7B7", fontSize:14 }}>✓</span>
+                        <span style={{ fontSize:12, fontWeight:600, color:"#6EE7B7" }}>성분 추출 완료</span>
+                      </div>
+                      <textarea value={ingredients} onChange={e => setIngredients(e.target.value)} rows={5}
+                        style={{ width:"100%", padding:"10px 12px", borderRadius:8, background:"rgba(0,0,0,0.3)", border:"1px solid var(--border)", color:"var(--text)", fontSize:12, lineHeight:1.6, resize:"vertical", boxSizing:"border-box" }} />
+                      <p style={{ fontSize:11, color:"var(--text2)", marginTop:4 }}>추출된 텍스트를 확인하고 필요시 수정한 뒤 판독을 시작하세요.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+ 
+          {/* Action buttons */}
           <div style={{ display:"flex", gap:8 }}>
             <button onClick={runCheck} disabled={(!ingredients.trim() && !productName.trim()) || analyzing}
               style={{ flex:1, padding:"14px", borderRadius:10, border:"none", background:(ingredients.trim()||productName.trim()) ? "linear-gradient(135deg,#4F8FFF,#2563EB)" : "#1E293B", color:"#fff", fontSize:15, fontWeight:700, opacity:analyzing?.7:1 }}>
               {analyzing ? "분석 중..." : "🔍 판독 시작"}
             </button>
-            <button onClick={() => { setProductName("Alpha Muscle Pro X"); setIngredients("L-Arginine 500mg, Tribulus Terrestris 300mg, Yohimbe Bark Extract (standardized for Yohimbine) 200mg, Horny Goat Weed Extract (Epimedium) 150mg, Diindolylmethane (DIM) 100mg, Fenugreek 200mg, Pea Protein Isolate 5g, Melatonin 3mg, Zinc 15mg"); }}
+            <button onClick={() => { setProductName("Alpha Muscle Pro X"); setInputMode("text"); setIngredients("L-Arginine 500mg, Tribulus Terrestris 300mg, Yohimbe Bark Extract (standardized for Yohimbine) 200mg, Horny Goat Weed Extract (Epimedium) 150mg, Diindolylmethane (DIM) 100mg, Fenugreek 200mg, Pea Protein Isolate 5g, Melatonin 3mg, Zinc 15mg"); }}
               style={{ padding:"14px 16px", borderRadius:10, border:"1px solid var(--border)", background:"transparent", color:"var(--text2)", fontSize:13, fontWeight:500 }}>샘플</button>
           </div>
         </div>
-
+ 
         {/* Results */}
         {results && (
           <div style={{ animation:"fadeUp .4s ease both" }}>
-            {/* Summary */}
             <div style={{ background:R[results.level].bg, border:`1px solid ${R[results.level].border}40`, borderRadius:16, padding:"20px 24px", marginBottom:16 }}>
               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                 <span style={{ padding:"4px 12px", borderRadius:8, background:R[results.level].badgeBg, color:"#fff", fontSize:12, fontWeight:700 }}>{R[results.level].badge}</span>
+                {results.fromImage && <span style={{ padding:"3px 8px", borderRadius:6, background:"rgba(129,140,248,0.15)", color:"#A5B4FC", fontSize:10, fontWeight:600 }}>📷 이미지 판독</span>}
                 <span style={{ fontSize:12, color:R[results.level].text, opacity:.7 }}>{results.product} · {results.time}</span>
               </div>
               <h2 style={{ fontSize:20, fontWeight:800, color:R[results.level].text }}>
                 {results.level === "safe" ? "금지 성분이 검출되지 않았습니다" : `금지/주의 성분 ${results.detected.length}개 검출`}
               </h2>
             </div>
-
-            {/* Detected */}
+ 
             {results.detected.length > 0 && (
               <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:16, padding:20, marginBottom:16 }}>
                 <h3 style={{ fontSize:14, fontWeight:700, marginBottom:14, color:"var(--text2)", letterSpacing:"0.02em" }}>1차 성분 매칭</h3>
@@ -387,8 +567,7 @@ export default function App() {
                 ))}
               </div>
             )}
-
-            {/* AI */}
+ 
             {(aiLoading || aiText) && (
               <div style={{ background:"var(--surface)", border:"1px solid rgba(129,140,248,0.15)", borderRadius:16, padding:20, marginBottom:16 }}>
                 <h3 style={{ fontSize:14, fontWeight:700, marginBottom:14, color:"#A5B4FC" }}>
@@ -404,7 +583,7 @@ export default function App() {
                 )}
               </div>
             )}
-
+ 
             {results.level === "safe" && (
               <div style={{ background:"var(--surface)", border:"1px solid rgba(16,185,129,0.15)", borderRadius:16, padding:28, textAlign:"center" }}>
                 <div style={{ fontSize:40, marginBottom:8 }}>✅</div>
