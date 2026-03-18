@@ -131,7 +131,7 @@ export default function App() {
       const base64Data = imagePreview.split(",")[1];
       const mediaType = imageFile.type || "image/jpeg";
       
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -199,7 +199,7 @@ Rules:
   async function runAi(text, detected) {
     setAiLoading(true);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/claude", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514", max_tokens: 800,
