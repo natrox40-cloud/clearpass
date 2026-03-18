@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
- 
+
 /* ─── Banned ingredient database (extracted from 4,631 real MFDS records) ─── */
 const BANNED = [
   "1-androstenedione","3b-hydroxy-androst-1-ene-17-one","5-htp","5-hydroxytryptophan",
@@ -35,7 +35,7 @@ const HIGH = new Set(["sildenafil","tadalafil","sibutramine","s4","andarine","sr
   "prednisolone","desoxy-d2pm","orlistat","phenolphthaleine","hhc",
   "mitragynine","mitragyna speciosa","dexamethasone","diclofenac","bisacodyl","lidocaine",
   "chlorpheniramine","클로람페니콜","디폭세틴"]);
- 
+
 function detect(text) {
   if (!text?.trim()) return [];
   const lower = text.toLowerCase();
@@ -49,7 +49,7 @@ function detect(text) {
   }
   return found.filter((f,i) => !found.some((o,j) => i!==j && o.name.length > f.name.length && o.name.includes(f.name)));
 }
- 
+
 /* ─── Animated counter ─── */
 function Counter({ end, duration = 2000, suffix = "" }) {
   const [val, setVal] = useState(0);
@@ -72,7 +72,7 @@ function Counter({ end, duration = 2000, suffix = "" }) {
   }, [end, duration]);
   return <span ref={ref}>{val.toLocaleString()}{suffix}</span>;
 }
- 
+
 /* ─── Main App ─── */
 export default function App() {
   const [page, setPage] = useState("home");
@@ -91,14 +91,14 @@ export default function App() {
   const [dragOver, setDragOver] = useState(false);
   const [inputMode, setInputMode] = useState("text"); // "text" or "image"
   const fileInputRef = useRef(null);
- 
+
   const countries = [
     { code: "kr", name: "한국", flag: "🇰🇷", active: true },
     { code: "jp", name: "日本", flag: "🇯🇵", active: false },
     { code: "us", name: "USA", flag: "🇺🇸", active: false },
     { code: "eu", name: "EU", flag: "🇪🇺", active: false },
   ];
- 
+
   /* ─── Image handling ─── */
   function handleImageSelect(file) {
     if (!file || !file.type.startsWith("image/")) return;
@@ -109,21 +109,21 @@ export default function App() {
     reader.onload = (e) => setImagePreview(e.target.result);
     reader.readAsDataURL(file);
   }
- 
+
   function handleDrop(e) {
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files[0];
     handleImageSelect(file);
   }
- 
+
   function removeImage() {
     setImageFile(null);
     setImagePreview(null);
     setImageExtracted(false);
     setIngredients("");
   }
- 
+
   async function extractFromImage() {
     if (!imagePreview) return;
     setImageExtracting(true);
@@ -147,7 +147,7 @@ export default function App() {
               {
                 type: "text",
                 text: `This is a supplement/food product label image. Extract ALL ingredient text visible in this image. Include everything: ingredient names, amounts, percentages, "Other Ingredients", warnings about contents.
- 
+
 Rules:
 - Output ONLY the extracted text, nothing else
 - Keep original language (English, Korean, Japanese, etc.)
@@ -161,9 +161,16 @@ Rules:
       });
       
       const data = await res.json();
+      
+      if (data.error) {
+        alert("API 오류: " + (typeof data.error === "string" ? data.error : JSON.stringify(data.error)));
+        setImageExtracting(false);
+        return;
+      }
+      
       const text = data.content?.map(c => c.text || "").join("\n") || "";
       
-      if (text.includes("NO_INGREDIENTS_FOUND")) {
+      if (!text || text.includes("NO_INGREDIENTS_FOUND")) {
         setIngredients("");
         alert("이미지에서 성분 정보를 찾을 수 없습니다. 다른 이미지를 시도해주세요.");
       } else {
@@ -171,11 +178,11 @@ Rules:
         setImageExtracted(true);
       }
     } catch (err) {
-      alert("이미지 분석 중 오류가 발생했습니다. 다시 시도해주세요.");
+      alert("이미지 분석 중 오류: " + err.message);
     }
     setImageExtracting(false);
   }
- 
+
   function runCheck() {
     if (!ingredients.trim() && !productName.trim()) return;
     setAnalyzing(true);
@@ -195,7 +202,7 @@ Rules:
       if (d.length > 0) runAi(ingredients, d);
     }, 600);
   }
- 
+
   async function runAi(text, detected) {
     setAiLoading(true);
     try {
@@ -204,15 +211,15 @@ Rules:
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514", max_tokens: 800,
           messages: [{ role: "user", content: `You are a Korean MFDS customs expert. Analyze these suspected ingredients found in a product: [${detected.map(d=>d.name).join(", ")}]. Product text: ${text.substring(0,1500)}. For each, determine if it's a real risk or false alarm (e.g. "pea" in "pea protein"). Reply in Korean only, format:
- 
+
 🔍 AI 정밀 판독
- 
+
 [위험 성분]
 • 성분명 — 사유 (1줄)
- 
+
 [안전 (가짜 알람)]
 • 성분명 — 사유 (1줄)
- 
+
 [종합]
 통관 위험도: 높음/중간/낮음
 근거: (1줄)` }],
@@ -223,11 +230,11 @@ Rules:
     } catch { setAiText("⚠️ AI 연결 실패 — 1차 매칭 결과를 참고하세요."); }
     setAiLoading(false);
   }
- 
+
   const R = { danger: { bg: "#1C0A0A", border: "#DC2626", accent: "#EF4444", text: "#FCA5A5", badge: "🚨 위험", badgeBg: "#991B1B" },
     warning: { bg: "#1A1506", border: "#D97706", accent: "#F59E0B", text: "#FDE68A", badge: "⚠️ 주의", badgeBg: "#92400E" },
     safe: { bg: "#061A0E", border: "#059669", accent: "#10B981", text: "#6EE7B7", badge: "✅ 안전", badgeBg: "#065F46" }};
- 
+
   /* ─── Styles ─── */
   const css = `
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap');
@@ -253,7 +260,7 @@ Rules:
     .grain { position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:.03;
       background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E") }
   `;
- 
+
   /* ─── LANDING PAGE ─── */
   if (page === "home") return (
     <div style={{ fontFamily: "'Outfit', 'Noto Sans KR', sans-serif", minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
@@ -270,7 +277,7 @@ Rules:
           </div>
         </div>
       </nav>
- 
+
       <section style={{ maxWidth:1080, margin:"0 auto", padding:"100px 24px 80px", textAlign:"center" }}>
         <div className="fade-up" style={{ display:"inline-block", padding:"6px 16px", borderRadius:20, background:"rgba(79,143,255,0.08)", border:"1px solid rgba(79,143,255,0.15)", fontSize:13, color:"var(--accent)", fontWeight:500, marginBottom:24 }}>
           식약처 위해식품 DB 4,631건 기반
@@ -299,7 +306,7 @@ Rules:
           ))}
         </div>
       </section>
- 
+
       <section style={{ maxWidth:1080, margin:"0 auto", padding:"0 24px 80px" }}>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))", gap:16 }}>
           {[
@@ -315,7 +322,7 @@ Rules:
           ))}
         </div>
       </section>
- 
+
       <section style={{ maxWidth:1080, margin:"0 auto", padding:"0 24px 100px" }}>
         <h2 style={{ fontSize:28, fontWeight:800, textAlign:"center", marginBottom:48, letterSpacing:"-0.02em" }}>어떻게 작동하나요?</h2>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:20 }}>
@@ -334,7 +341,7 @@ Rules:
           ))}
         </div>
       </section>
- 
+
       <section style={{ maxWidth:600, margin:"0 auto", padding:"0 24px 100px", textAlign:"center" }}>
         <div style={{ padding:48, borderRadius:20, background:"linear-gradient(135deg, rgba(79,143,255,0.06), rgba(129,140,248,0.06))", border:"1px solid rgba(79,143,255,0.12)" }}>
           <h2 style={{ fontSize:24, fontWeight:800, marginBottom:12 }}>지금 바로 확인해보세요</h2>
@@ -344,13 +351,13 @@ Rules:
           </button>
         </div>
       </section>
- 
+
       <footer style={{ borderTop:"1px solid var(--border)", padding:"24px", textAlign:"center", fontSize:11, color:"var(--text2)" }}>
         <p>© 2026 ClearPass · 식품안전나라 해외직구 위해식품 차단 목록 기반 · 본 결과는 참고용이며 최종 통관 여부는 세관 판단에 따릅니다</p>
       </footer>
     </div>
   );
- 
+
   /* ─── PRICING PAGE ─── */
   if (page === "pricing") return (
     <div style={{ fontFamily: "'Outfit', 'Noto Sans KR', sans-serif", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
@@ -386,13 +393,13 @@ Rules:
       </section>
     </div>
   );
- 
+
   /* ─── CHECK PAGE ─── */
   return (
     <div style={{ fontFamily:"'Outfit','Noto Sans KR',sans-serif", minHeight:"100vh", background:"var(--bg)", color:"var(--text)" }}>
       <style>{css}</style>
       <div className="grain" />
- 
+
       <nav style={{ position:"sticky", top:0, zIndex:50, background:"rgba(8,9,14,0.85)", backdropFilter:"blur(20px)", borderBottom:"1px solid var(--border)", padding:"0 24px" }}>
         <div style={{ maxWidth:760, margin:"0 auto", display:"flex", justifyContent:"space-between", alignItems:"center", height:60 }}>
           <button onClick={() => setPage("home")} style={{ display:"flex", alignItems:"center", gap:10, background:"none", border:"none", color:"var(--text)" }}>
@@ -411,7 +418,7 @@ Rules:
           </div>
         </div>
       </nav>
- 
+
       <div style={{ maxWidth:760, margin:"0 auto", padding:"32px 16px" }}>
         {/* Input */}
         <div className="fade-up" style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:16, padding:24, marginBottom:20 }}>
@@ -421,7 +428,7 @@ Rules:
             <input type="text" placeholder="예: Hardon Blue, NOW Foods Omega-3" value={productName} onChange={e => setProductName(e.target.value)}
               style={{ width:"100%", padding:"12px 16px", borderRadius:10, background:"var(--bg)", border:"1px solid var(--border)", color:"var(--text)", fontSize:15, boxSizing:"border-box" }} />
           </div>
- 
+
           {/* Input mode toggle */}
           <div style={{ display:"flex", gap:4, marginBottom:16, background:"var(--bg)", borderRadius:10, padding:4 }}>
             <button onClick={() => setInputMode("text")} style={{
@@ -435,7 +442,7 @@ Rules:
               color: inputMode === "image" ? "var(--accent)" : "var(--text2)",
             }}>📷 이미지 판독</button>
           </div>
- 
+
           {/* Text input mode */}
           {inputMode === "text" && (
             <div style={{ marginBottom:20 }}>
@@ -444,7 +451,7 @@ Rules:
                 style={{ width:"100%", padding:"12px 16px", borderRadius:10, background:"var(--bg)", border:"1px solid var(--border)", color:"var(--text)", fontSize:14, lineHeight:1.7, resize:"vertical", boxSizing:"border-box" }} />
             </div>
           )}
- 
+
           {/* Image input mode */}
           {inputMode === "image" && (
             <div style={{ marginBottom:20 }}>
@@ -510,7 +517,7 @@ Rules:
                       </button>
                     </div>
                   )}
- 
+
                   {imageExtracted && (
                     <div style={{ padding:16, borderTop:"1px solid var(--border)" }}>
                       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
@@ -526,7 +533,7 @@ Rules:
               )}
             </div>
           )}
- 
+
           {/* Action buttons */}
           <div style={{ display:"flex", gap:8 }}>
             <button onClick={runCheck} disabled={(!ingredients.trim() && !productName.trim()) || analyzing}
@@ -537,7 +544,7 @@ Rules:
               style={{ padding:"14px 16px", borderRadius:10, border:"1px solid var(--border)", background:"transparent", color:"var(--text2)", fontSize:13, fontWeight:500 }}>샘플</button>
           </div>
         </div>
- 
+
         {/* Results */}
         {results && (
           <div style={{ animation:"fadeUp .4s ease both" }}>
@@ -551,7 +558,7 @@ Rules:
                 {results.level === "safe" ? "금지 성분이 검출되지 않았습니다" : `금지/주의 성분 ${results.detected.length}개 검출`}
               </h2>
             </div>
- 
+
             {results.detected.length > 0 && (
               <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:16, padding:20, marginBottom:16 }}>
                 <h3 style={{ fontSize:14, fontWeight:700, marginBottom:14, color:"var(--text2)", letterSpacing:"0.02em" }}>1차 성분 매칭</h3>
@@ -567,7 +574,7 @@ Rules:
                 ))}
               </div>
             )}
- 
+
             {(aiLoading || aiText) && (
               <div style={{ background:"var(--surface)", border:"1px solid rgba(129,140,248,0.15)", borderRadius:16, padding:20, marginBottom:16 }}>
                 <h3 style={{ fontSize:14, fontWeight:700, marginBottom:14, color:"#A5B4FC" }}>
@@ -583,7 +590,7 @@ Rules:
                 )}
               </div>
             )}
- 
+
             {results.level === "safe" && (
               <div style={{ background:"var(--surface)", border:"1px solid rgba(16,185,129,0.15)", borderRadius:16, padding:28, textAlign:"center" }}>
                 <div style={{ fontSize:40, marginBottom:8 }}>✅</div>
