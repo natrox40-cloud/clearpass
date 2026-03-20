@@ -201,7 +201,12 @@ Rules:
       const data = await res.json();
       
       if (data.error) {
-        alert("API 오류: " + (typeof data.error === "string" ? data.error : JSON.stringify(data.error)));
+        const errStr = typeof data.error === "string" ? data.error : JSON.stringify(data.error);
+        if (errStr.includes("rate_limit")) {
+          alert("요청이 많아 일시적으로 제한되었습니다. 1분 후 다시 시도해주세요.");
+        } else {
+          alert("이미지 분석 중 오류가 발생했습니다. 다시 시도해주세요.");
+        }
         setImageExtracting(false);
         return;
       }
@@ -539,7 +544,7 @@ ${text.substring(0,1500)}
                   <span style={{ fontSize:24 }}>🔗</span>
                   <div>
                     <p style={{ fontSize:14, fontWeight:600, color:"var(--text)" }}>제품 URL을 입력하세요</p>
-                    <p style={{ fontSize:11, color:"var(--text2)" }}>아마존, iHerb 등 제품 상세 페이지 주소</p>
+                    <p style={{ fontSize:11, color:"var(--text2)" }}>아마존, iHerb 등 해외 쇼핑몰 지원 | 네이버·쿠팡 등 국내몰은 준비 중</p>
                   </div>
                 </div>
                 <div style={{ display:"flex", gap:8 }}>
@@ -569,7 +574,12 @@ Rules:
                       });
                       const data = await res.json();
                       if (data.error) {
-                        alert("URL 분석 오류: " + (typeof data.error === "string" ? data.error : JSON.stringify(data.error)));
+                        const errStr = typeof data.error === "string" ? data.error : JSON.stringify(data.error);
+                        if (errStr.includes("rate_limit")) {
+                          alert("요청이 많아 일시적으로 제한되었습니다. 1분 후 다시 시도해주세요.");
+                        } else {
+                          alert("URL 분석 오류가 발생했습니다. 다시 시도해주세요.");
+                        }
                       } else {
                         const text = data.content?.map(c => c.text || "").join("\n") || "";
                         if (text.includes("NOT_FOUND")) {
@@ -621,7 +631,7 @@ Rules:
                     성분표 사진을 드래그하거나 클릭해서 업로드
                   </p>
                   <p style={{ fontSize:13, color:"var(--accent)", marginBottom:4, fontWeight:500 }}>
-                    💡 Ctrl+V로 스크린샷 바로 붙여넣기 가능
+                    💡 Win+Shift+S로 영역 캡처 → 여기서 Ctrl+V로 바로 붙여넣기
                   </p>
                   <p style={{ fontSize:12, color:"var(--text2)" }}>
                     JPG, PNG, WebP 지원 · Supplement Facts / 성분표 / 영양정보
@@ -751,3 +761,4 @@ Rules:
     </div>
   );
 }
+ 
