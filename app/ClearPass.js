@@ -89,8 +89,27 @@ export default function App() {
   const [imageExtracting, setImageExtracting] = useState(false);
   const [imageExtracted, setImageExtracted] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [inputMode, setInputMode] = useState("text"); // "text" or "image"
+  const [inputMode, setInputMode] = useState("text"); // "text", "image", "url"
   const fileInputRef = useRef(null);
+  /* ─── URL input state ─── */
+  const [urlInput, setUrlInput] = useState("");
+  const [urlLoading, setUrlLoading] = useState(false);
+ 
+  /* ─── Browser history for back button ─── */
+  function navigateTo(newPage) {
+    window.history.pushState({ page: newPage }, "", `#${newPage}`);
+    setPage(newPage);
+  }
+  useEffect(() => {
+    const handlePop = (e) => {
+      const p = e.state?.page || "home";
+      setPage(p);
+    };
+    window.addEventListener("popstate", handlePop);
+    // Set initial state
+    window.history.replaceState({ page: "home" }, "", "#home");
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
  
   const countries = [
     { code: "kr", name: "한국", flag: "🇰🇷", active: true },
@@ -309,7 +328,7 @@ ${text.substring(0,1500)}
             <span style={{ fontSize:17, fontWeight:700, letterSpacing:"-0.02em" }}>ClearPass</span>
           </div>
           <div style={{ display:"flex", gap:8 }}>
-            <button onClick={() => setPage("check")} style={{ padding:"8px 20px", borderRadius:8, border:"1px solid var(--accent)", background:"transparent", color:"var(--accent)", fontSize:13, fontWeight:600 }}>판독 시작</button>
+            <button onClick={() => navigateTo("check")} style={{ padding:"8px 20px", borderRadius:8, border:"1px solid var(--accent)", background:"transparent", color:"var(--accent)", fontSize:13, fontWeight:600 }}>판독 시작</button>
           </div>
         </div>
       </nav>
@@ -330,10 +349,10 @@ ${text.substring(0,1500)}
           현재 검사 범위: 식품 · 건강기능식품 · 영양제 · 보충제 | 의약품 · 화장품 · 전자제품은 미지원
         </p>
         <div className="fade-up fade-up-3" style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
-          <button onClick={() => setPage("check")} style={{ padding:"14px 36px", borderRadius:10, border:"none", background:"linear-gradient(135deg, #4F8FFF, #2563EB)", color:"#fff", fontSize:16, fontWeight:700, boxShadow:"0 4px 24px rgba(79,143,255,0.3)" }}>
+          <button onClick={() => navigateTo("check")} style={{ padding:"14px 36px", borderRadius:10, border:"none", background:"linear-gradient(135deg, #4F8FFF, #2563EB)", color:"#fff", fontSize:16, fontWeight:700, boxShadow:"0 4px 24px rgba(79,143,255,0.3)" }}>
             무료로 판독 시작 →
           </button>
-          <button onClick={() => setPage("pricing")} style={{ padding:"14px 28px", borderRadius:10, border:"1px solid var(--border)", background:"var(--surface)", color:"var(--text2)", fontSize:15, fontWeight:500 }}>
+          <button onClick={() => navigateTo("pricing")} style={{ padding:"14px 28px", borderRadius:10, border:"1px solid var(--border)", background:"var(--surface)", color:"var(--text2)", fontSize:15, fontWeight:500 }}>
             요금 안내
           </button>
         </div>
@@ -388,7 +407,7 @@ ${text.substring(0,1500)}
         <div style={{ padding:48, borderRadius:20, background:"linear-gradient(135deg, rgba(79,143,255,0.06), rgba(129,140,248,0.06))", border:"1px solid rgba(79,143,255,0.12)" }}>
           <h2 style={{ fontSize:24, fontWeight:800, marginBottom:12 }}>지금 바로 확인해보세요</h2>
           <p style={{ fontSize:14, color:"var(--text2)", marginBottom:24 }}>무료 체험 3건 제공 · 가입 불필요 · 이미지 판독 지원<br/><span style={{ fontSize:11, opacity:0.6 }}>식품 · 건강기능식품 · 영양제 · 보충제 전용</span></p>
-          <button onClick={() => setPage("check")} style={{ padding:"14px 40px", borderRadius:10, border:"none", background:"linear-gradient(135deg, #4F8FFF, #2563EB)", color:"#fff", fontSize:16, fontWeight:700 }}>
+          <button onClick={() => navigateTo("check")} style={{ padding:"14px 40px", borderRadius:10, border:"none", background:"linear-gradient(135deg, #4F8FFF, #2563EB)", color:"#fff", fontSize:16, fontWeight:700 }}>
             판독 시작 →
           </button>
         </div>
@@ -407,11 +426,11 @@ ${text.substring(0,1500)}
       <div className="grain" />
       <nav style={{ position:"sticky", top:0, zIndex:50, background:"rgba(8,9,14,0.85)", backdropFilter:"blur(20px)", borderBottom:"1px solid var(--border)", padding:"0 24px" }}>
         <div style={{ maxWidth:1080, margin:"0 auto", display:"flex", justifyContent:"space-between", alignItems:"center", height:60 }}>
-          <button onClick={() => setPage("home")} style={{ display:"flex", alignItems:"center", gap:10, background:"none", border:"none", color:"var(--text)" }}>
+          <button onClick={() => navigateTo("home")} style={{ display:"flex", alignItems:"center", gap:10, background:"none", border:"none", color:"var(--text)" }}>
             <div style={{ width:32, height:32, borderRadius:8, background:"linear-gradient(135deg, #4F8FFF, #2563EB)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>🛡</div>
             <span style={{ fontSize:17, fontWeight:700 }}>ClearPass</span>
           </button>
-          <button onClick={() => setPage("check")} style={{ padding:"8px 20px", borderRadius:8, border:"none", background:"var(--accent)", color:"#fff", fontSize:13, fontWeight:600 }}>판독 시작</button>
+          <button onClick={() => navigateTo("check")} style={{ padding:"8px 20px", borderRadius:8, border:"none", background:"var(--accent)", color:"#fff", fontSize:13, fontWeight:600 }}>판독 시작</button>
         </div>
       </nav>
       <section style={{ maxWidth:800, margin:"0 auto", padding:"60px 24px" }}>
@@ -444,7 +463,7 @@ ${text.substring(0,1500)}
  
       <nav style={{ position:"sticky", top:0, zIndex:50, background:"rgba(8,9,14,0.85)", backdropFilter:"blur(20px)", borderBottom:"1px solid var(--border)", padding:"0 24px" }}>
         <div style={{ maxWidth:760, margin:"0 auto", display:"flex", justifyContent:"space-between", alignItems:"center", height:60 }}>
-          <button onClick={() => setPage("home")} style={{ display:"flex", alignItems:"center", gap:10, background:"none", border:"none", color:"var(--text)" }}>
+          <button onClick={() => navigateTo("home")} style={{ display:"flex", alignItems:"center", gap:10, background:"none", border:"none", color:"var(--text)" }}>
             <div style={{ width:32, height:32, borderRadius:8, background:"linear-gradient(135deg, #4F8FFF, #2563EB)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>🛡</div>
             <span style={{ fontSize:17, fontWeight:700 }}>ClearPass</span>
           </button>
@@ -482,24 +501,98 @@ ${text.substring(0,1500)}
  
           {/* Input mode toggle */}
           <div style={{ display:"flex", gap:4, marginBottom:16, background:"var(--bg)", borderRadius:10, padding:4 }}>
-            <button onClick={() => setInputMode("text")} style={{
-              flex:1, padding:"10px", borderRadius:8, border:"none", fontSize:13, fontWeight:600,
-              background: inputMode === "text" ? "rgba(79,143,255,0.15)" : "transparent",
-              color: inputMode === "text" ? "var(--accent)" : "var(--text2)",
-            }}>📝 텍스트 입력</button>
-            <button onClick={() => setInputMode("image")} style={{
-              flex:1, padding:"10px", borderRadius:8, border:"none", fontSize:13, fontWeight:600,
-              background: inputMode === "image" ? "rgba(79,143,255,0.15)" : "transparent",
-              color: inputMode === "image" ? "var(--accent)" : "var(--text2)",
-            }}>📷 이미지 판독</button>
+            {[
+              { key:"text", label:"📝 텍스트", icon:"" },
+              { key:"image", label:"📷 이미지", icon:"" },
+              { key:"url", label:"🔗 URL", icon:"" },
+            ].map(m => (
+              <button key={m.key} onClick={() => setInputMode(m.key)} style={{
+                flex:1, padding:"10px", borderRadius:8, border:"none", fontSize:13, fontWeight:600,
+                background: inputMode === m.key ? "rgba(79,143,255,0.15)" : "transparent",
+                color: inputMode === m.key ? "var(--accent)" : "var(--text2)",
+              }}>{m.label}</button>
+            ))}
           </div>
  
           {/* Text input mode */}
           {inputMode === "text" && (
             <div style={{ marginBottom:20 }}>
-              <label style={{ display:"block", fontSize:12, fontWeight:600, color:"var(--text2)", marginBottom:6, letterSpacing:"0.04em", textTransform:"uppercase" }}>성분 텍스트</label>
-              <textarea placeholder="제품 상세페이지에서 Supplement Facts / 성분표를 복사해서 붙여넣으세요..." value={ingredients} onChange={e => setIngredients(e.target.value)} rows={7}
-                style={{ width:"100%", padding:"12px 16px", borderRadius:10, background:"var(--bg)", border:"1px solid var(--border)", color:"var(--text)", fontSize:14, lineHeight:1.7, resize:"vertical", boxSizing:"border-box" }} />
+              <div style={{ position:"relative" }}>
+                {!ingredients && (
+                  <div style={{ position:"absolute", top:0, left:0, right:0, bottom:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:1, padding:20 }}>
+                    <div style={{ fontSize:32, marginBottom:8, opacity:0.4 }}>📋</div>
+                    <p style={{ fontSize:14, fontWeight:600, color:"var(--text2)", opacity:0.6, textAlign:"center" }}>성분표 텍스트를 여기에 붙여넣으세요</p>
+                    <p style={{ fontSize:11, color:"var(--text2)", opacity:0.4, textAlign:"center", marginTop:4 }}>아마존/iHerb 등 상세페이지에서 Supplement Facts를 복사(Ctrl+C)한 뒤 여기에 붙여넣기(Ctrl+V)</p>
+                  </div>
+                )}
+                <textarea value={ingredients} onChange={e => setIngredients(e.target.value)} rows={7}
+                  style={{ width:"100%", padding:"12px 16px", borderRadius:10, background:"var(--bg)", border: ingredients ? "1px solid var(--accent)" : "1px solid rgba(79,143,255,0.2)", color:"var(--text)", fontSize:14, lineHeight:1.7, resize:"vertical", boxSizing:"border-box", position:"relative", zIndex:2 }} />
+              </div>
+            </div>
+          )}
+ 
+          {/* URL input mode */}
+          {inputMode === "url" && (
+            <div style={{ marginBottom:20 }}>
+              <div style={{ padding:20, borderRadius:12, border:"1px solid rgba(79,143,255,0.2)", background:"var(--bg)" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+                  <span style={{ fontSize:24 }}>🔗</span>
+                  <div>
+                    <p style={{ fontSize:14, fontWeight:600, color:"var(--text)" }}>제품 URL을 입력하세요</p>
+                    <p style={{ fontSize:11, color:"var(--text2)" }}>아마존, iHerb 등 제품 상세 페이지 주소</p>
+                  </div>
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <input type="url" placeholder="https://www.amazon.com/..." value={urlInput} onChange={e => setUrlInput(e.target.value)}
+                    style={{ flex:1, padding:"12px 16px", borderRadius:10, background:"rgba(0,0,0,0.3)", border:"1px solid var(--border)", color:"var(--text)", fontSize:14, boxSizing:"border-box" }} />
+                  <button onClick={async () => {
+                    if (!urlInput.trim()) return;
+                    setUrlLoading(true);
+                    try {
+                      const res = await fetch("/api/claude", {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          model: "claude-sonnet-4-20250514", max_tokens: 1500,
+                          messages: [{ role: "user", content: `You have web search capability. Search for the product at this URL: ${urlInput}
+ 
+Find and extract:
+1. The product name
+2. ALL ingredients / Supplement Facts
+ 
+Rules:
+- Output the product name on the first line prefixed with "PRODUCT_NAME: "
+- Output all ingredients after a line "INGREDIENTS:"
+- Keep original language
+- If you cannot find the product or ingredients, respond with: NOT_FOUND` }],
+                          tools: [{ type: "web_search_20250305", name: "web_search" }],
+                        }),
+                      });
+                      const data = await res.json();
+                      if (data.error) {
+                        alert("URL 분석 오류: " + (typeof data.error === "string" ? data.error : JSON.stringify(data.error)));
+                      } else {
+                        const text = data.content?.map(c => c.text || "").join("\n") || "";
+                        if (text.includes("NOT_FOUND")) {
+                          alert("해당 URL에서 제품 정보를 찾을 수 없습니다.");
+                        } else {
+                          const nameMatch = text.match(/PRODUCT_NAME:\s*(.+)/);
+                          const ingMatch = text.split("INGREDIENTS:");
+                          if (nameMatch) setProductName(nameMatch[1].trim());
+                          if (ingMatch[1]) setIngredients(ingMatch[1].trim());
+                          setInputMode("text");
+                        }
+                      }
+                    } catch (err) { alert("URL 분석 실패: " + err.message); }
+                    setUrlLoading(false);
+                  }} disabled={!urlInput.trim() || urlLoading}
+                    style={{ padding:"12px 20px", borderRadius:10, border:"none", background: urlInput.trim() ? "linear-gradient(135deg, #818CF8, #6366F1)" : "#1E293B", color:"#fff", fontSize:13, fontWeight:700, whiteSpace:"nowrap", opacity: urlLoading ? 0.7 : 1 }}>
+                    {urlLoading ? "분석 중..." : "분석"}
+                  </button>
+                </div>
+                <p style={{ fontSize:11, color:"var(--text2)", marginTop:8, opacity:0.6 }}>
+                  AI가 해당 페이지에서 제품명과 성분 정보를 자동으로 추출합니다
+                </p>
+              </div>
             </div>
           )}
  
