@@ -9,6 +9,17 @@ export async function POST(request) {
       });
     }
  
+    const requestBody = {
+      model: body.model || "claude-sonnet-4-20250514",
+      max_tokens: body.max_tokens || 1500,
+      messages: body.messages,
+    };
+ 
+    // Add tools if provided (e.g., web_search)
+    if (body.tools) {
+      requestBody.tools = body.tools;
+    }
+ 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -16,11 +27,7 @@ export async function POST(request) {
         "x-api-key": process.env.ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify({
-        model: body.model || "claude-sonnet-4-20250514",
-        max_tokens: body.max_tokens || 1500,
-        messages: body.messages,
-      }),
+      body: JSON.stringify(requestBody),
     });
  
     if (!response.ok) {
