@@ -226,24 +226,56 @@ Rules:
     setImageExtracting(false);
   }
  
-  function runCheck() {
+  /* ─── DB search state ─── */
+  const [dbMatches, setDbMatches] = useState([]);
+  const [dbSearching, setDbSearching] = useState(false);
+ 
+  async function runCheck() {
     if (!ingredients.trim() && !productName.trim()) return;
     setAnalyzing(true);
     setAiText("");
-    setTimeout(() => {
-      const d = detect(ingredients);
-      const high = d.filter(x => x.risk === "high");
-      const med = d.filter(x => x.risk === "med");
-      setResults({
-        product: productName || "Unknown",
-        detected: d, high, med,
-        level: high.length > 0 ? "danger" : med.length > 0 ? "warning" : "safe",
-        time: new Date().toLocaleString("ko-KR"),
-        fromImage: inputMode === "image" && imageExtracted,
-      });
-      setAnalyzing(false);
-      if (d.length > 0) runAi(ingredients, d);
-    }, 600);
+    setDbMatches([]);
+ 
+    // 1차: 성분 키워드 매칭
+    const d = detect(ingredients);
+    const high = d.filter(x => x.risk === "high");
+    const med = d.filter(x => x.risk === "med");
+ 
+    // 2차: 제품명 DB 검색 (병렬 실행)
+    let dbResults = [];
+    if (productName.trim()) {
+      setDbSearching(true);
+      try {
+        const res = await fetch("/api/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productName: productName.trim() }),
+        });
+        const data = await res.json();
+        if (data.matches && data.matches.length > 0) {
+          dbResults = data.matches;
+          setDbMatches(data.matches);
+        }
+      } catch (err) {
+        console.error("DB search error:", err);
+      }
+      setDbSearching(false);
+    }
+ 
+    // 판정: DB에서 위해식품으로 발견되면 무조건 danger
+    const dbDanger = dbResults.length > 0;
+    const level = dbDanger ? "danger" : (high.length > 0 ? "danger" : med.length > 0 ? "warning" : "safe");
+ 
+    setResults({
+      product: productName || "Unknown",
+      detected: d, high, med,
+      level,
+      time: new Date().toLocaleString("ko-KR"),
+      fromImage: inputMode === "image" && imageExtracted,
+      dbMatches: dbResults,
+    });
+    setAnalyzing(false);
+    if (d.length > 0) runAi(ingredients, d);
   }
  
   async function runAi(text, detected) {
@@ -706,15 +738,44 @@ Rules:
         {results && (
           <div style={{ animation:"fadeUp .4s ease both" }}>
             <div style={{ background:R[results.level].bg, border:`1px solid ${R[results.level].border}40`, borderRadius:16, padding:"20px 24px", marginBottom:16 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8, flexWrap:"wrap" }}>
                 <span style={{ padding:"4px 12px", borderRadius:8, background:R[results.level].badgeBg, color:"#fff", fontSize:12, fontWeight:700 }}>{R[results.level].badge}</span>
                 {results.fromImage && <span style={{ padding:"3px 8px", borderRadius:6, background:"rgba(129,140,248,0.15)", color:"#A5B4FC", fontSize:10, fontWeight:600 }}>📷 이미지 판독</span>}
+                {results.dbMatches?.length > 0 && <span style={{ padding:"3px 8px", borderRadius:6, background:"rgba(239,68,68,0.15)", color:"#FCA5A5", fontSize:10, fontWeight:600 }}>🗄️ DB 매칭</span>}
                 <span style={{ fontSize:12, color:R[results.level].text, opacity:.7 }}>{results.product} · {results.time}</span>
               </div>
               <h2 style={{ fontSize:20, fontWeight:800, color:R[results.level].text }}>
-                {results.level === "safe" ? "금지 성분이 검출되지 않았습니다" : `금지/주의 성분 ${results.detected.length}개 검출`}
+                {results.dbMatches?.length > 0
+                  ? `⚠️ 식약처 위해식품 DB에 등록된 제품입니다 (${results.dbMatches.length}건 매칭)`
+                  : results.level === "safe"
+                    ? "금지 성분이 검출되지 않았습니다"
+                    : `금지/주의 성분 ${results.detected.length}개 검출`}
               </h2>
             </div>
+ 
+            {/* DB Matches */}
+            {results.dbMatches?.length > 0 && (
+              <div style={{ background:"#1C0A0A", border:"1px solid rgba(239,68,68,0.2)", borderRadius:16, padding:20, marginBottom:16 }}>
+                <h3 style={{ fontSize:14, fontWeight:700, marginBottom:14, color:"#FCA5A5", letterSpacing:"0.02em" }}>🗄️ 식약처 위해식품 DB 매칭 결과</h3>
+                {results.dbMatches.map((m, i) => (
+                  <div key={i} style={{ padding:"12px 14px", marginBottom:8, borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.12)" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                      <span style={{ fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:5, background:"#991B1B", color:"#fff" }}>위해식품</span>
+                      <span style={{ fontSize:14, fontWeight:700, color:"#FCA5A5" }}>{m.productName}</span>
+                    </div>
+                    <div style={{ display:"flex", gap:16, flexWrap:"wrap", fontSize:12, color:"var(--text2)" }}>
+                      {m.detectedIngredient && <span>검출성분: <strong style={{ color:"#EF4444" }}>{m.detectedIngredient}</strong>{m.detectedIngredientKr && ` (${m.detectedIngredientKr})`}</span>}
+                      {m.manufacturer && <span>제조사: {m.manufacturer}</span>}
+                      {m.country && <span>제조국: {m.country}</span>}
+                      {m.registeredDate && <span>등록일: {m.registeredDate}</span>}
+                    </div>
+                  </div>
+                ))}
+                <p style={{ fontSize:11, color:"#FCA5A5", marginTop:8, opacity:0.7 }}>
+                  이 제품은 식약처에 의해 위해식품으로 등록되어 있으며, 통관 시 차단/폐기될 가능성이 매우 높습니다.
+                </p>
+              </div>
+            )}
  
             {results.detected.length > 0 && (
               <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:16, padding:20, marginBottom:16 }}>
@@ -761,4 +822,3 @@ Rules:
     </div>
   );
 }
- 
