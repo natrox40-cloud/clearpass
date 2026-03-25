@@ -9,26 +9,26 @@ export async function POST(request) {
       });
     }
  
-    const AIRTABLE_TOKEN = process.env.AIRTABLE_API_KEY;
-    if (!AIRTABLE_TOKEN) {
-      return new Response(JSON.stringify({ error: "Airtable API key not configured" }), {
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_KEY = process.env.SUPABASE_KEY;
+ 
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      return new Response(JSON.stringify({ error: "Supabase not configured" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
  
-    const BASE_ID = "appc3ZNsNDKExnVaM";
-    const TABLE_ID = "tblQIu9lwrbhbHmxX";
-    
-    // Search by product name using Airtable's filterByFormula
-    const searchTerm = productName.trim().replace(/'/g, "\\'");
-    const formula = encodeURIComponent(`SEARCH(LOWER("${searchTerm}"), LOWER({제품명}))`);
-    
-    const url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_ID}?filterByFormula=${formula}&maxRecords=10&fields%5B%5D=제품명&fields%5B%5D=제조사명&fields%5B%5D=제조국가&fields%5B%5D=검출성분&fields%5B%5D=검출성분(국문)&fields%5B%5D=등록일`;
+    const searchTerm = productName.trim().toLowerCase();
+ 
+    // Supabase REST API로 제품명 검색 (ILIKE = 대소문자 무시 부분 검색)
+    const url = `${SUPABASE_URL}/rest/v1/hazardous_products?product_name=ilike.*${encodeURIComponent(searchTerm)}*&select=id,product_name,detected_ingredient,detected_ingredient_kr,manufacturer,origin_country,status,source,target_country&limit=10`;
  
     const res = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
       },
     });
  
@@ -41,15 +41,16 @@ export async function POST(request) {
     }
  
     const data = await res.json();
-    
-    const matches = (data.records || []).map((r) => ({
+ 
+    const matches = (data || []).map((r) => ({
       id: r.id,
-      productName: r.fields["제품명"] || "",
-      manufacturer: r.fields["제조사명"]?.name || r.fields["제조사명"] || "",
-      country: r.fields["제조국가"]?.name || r.fields["제조국가"] || "",
-      detectedIngredient: r.fields["검출성분"]?.name || r.fields["검출성분"] || "",
-      detectedIngredientKr: r.fields["검출성분(국문)"] || "",
-      registeredDate: r.fields["등록일"] || "",
+      productName: r.product_name || "",
+      manufacturer: r.manufacturer || "",
+      country: r.origin_country || "",
+      detectedIngredient: r.detected_ingredient || "",
+      detectedIngredientKr: r.detected_ingredient_kr || "",
+      source: r.source || "",
+      targetCountry: r.target_country || "",
     }));
  
     return new Response(JSON.stringify({ matches, count: matches.length }), {
