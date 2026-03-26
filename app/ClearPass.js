@@ -148,6 +148,7 @@ const LANG = {
     step2: "이미지 판독", step2d: "AI가 사진 속 성분표 텍스트를 자동 추출",
     step3: "위험 성분 스캔", step3d: "157개 금지 성분 DB와 자동 대조 + AI 분석",
     step4: "판정 리포트", step4d: "위험도 등급과 근거가 포함된 즉시 결과 제공",
+    disclaimer: "⚠️ 면책 고지: 본 판독 결과는 참고 자료이며 법적 효력이 없습니다. 최종 통관 여부는 각국 세관 및 규제 기관의 판단에 따릅니다. 데이터베이스에 최신 규제 정보가 반영되지 않았을 수 있습니다.",
   },
   en: {
     check: "Start Scan", pricing_btn: "Pricing", hero_badge: "Based on 5,482 hazardous product records from 4 countries",
@@ -188,6 +189,7 @@ const LANG = {
     step2: "Image Scan", step2d: "AI extracts ingredient text from photos",
     step3: "Risk Scan", step3d: "Auto-match against banned ingredient database + AI",
     step4: "Report", step4d: "Instant results with risk level and evidence",
+    disclaimer: "⚠️ Disclaimer: These results are for reference only and have no legal effect. Final customs decisions are made by each country's customs and regulatory authorities. The database may not reflect the latest regulatory information.",
   },
   ja: {
     check: "判定開始", pricing_btn: "料金", hero_badge: "4カ国の有害食品DB 5,482件に基づく",
@@ -226,6 +228,46 @@ const LANG = {
     step2: "画像判定", step2d: "AIが写真から成分表テキストを自動抽出",
     step3: "リスクスキャン", step3d: "禁止成分DBと自動照合 + AI分析",
     step4: "判定結果", step4d: "リスクレベルと根拠を含む即時結果",
+    disclaimer: "⚠️ 免責事項：本判定結果は参考資料であり、法的効力はありません。最終的な通関判断は各国の税関および規制当局に委ねられます。データベースに最新の規制情報が反映されていない場合があります。",
+  },
+  zh: {
+    check: "开始检测", pricing_btn: "价格", hero_badge: "基于4国有害食品数据库5,482条记录",
+    hero1: "海外直购保健品，", hero2: "通关前先确认",
+    hero_p: "上传成分表照片或粘贴文本，\nAI即时检测禁止成分。",
+    hero_scope: "检测范围：食品·保健品·营养剂·补充剂 | 药品·化妆品·电子产品暂不支持",
+    free_cta: "免费检测 →", countries_title: "支持国家",
+    how: "工作原理", cta_h: "立即确认", cta_p: "免费3次·无需注册·支持图片检测",
+    cta_scope: "食品·保健品·营养剂·补充剂专用", cta_btn: "开始检测 →",
+    footer: "© 2026 ClearPass · 结果仅供参考 · 最终通关判断由海关决定",
+    scope_label: "检测范围：", scope_yes: "食品·保健品·营养剂·补充剂", scope_no: "药品·化妆品·电子产品暂不支持",
+    product: "产品名称", product_ph: "例：Hardon Blue, NOW Foods Omega-3",
+    tab_text: "📝 文本", tab_image: "📷 图片", tab_url: "🔗 URL",
+    text_ph: "在此粘贴成分表文本", text_sub: "从Amazon/iHerb产品页面复制Supplement Facts后粘贴（Ctrl+V）",
+    img_drop: "拖拽或点击上传成分表照片", img_paste: "💡 Win+Shift+S截图 → 在此Ctrl+V粘贴",
+    img_fmt: "支持JPG, PNG, WebP · 最多5张", img_extract: "🔬 AI提取成分",
+    img_extracting: "AI正在读取成分表...", img_done: "提取完成",
+    img_hint: "请检查提取的文本，必要时修改后开始检测。",
+    url_title: "输入产品URL", url_sub: "支持Amazon, iHerb | 国内平台即将支持",
+    url_btn: "分析", url_loading: "分析中...", url_hint: "AI将自动从页面提取产品名称和成分信息",
+    btn_check: "🔍 开始检测", btn_checking: "分析中...", btn_sample: "样本", btn_reset: "重置",
+    import_label: "进口国：",
+    safe_badge: "✅ 安全", warn_badge: "⚠️ 注意", danger_badge: "🚨 危险",
+    db_title: "🗄️ 有害食品数据库匹配结果", db_label: "有害食品",
+    db_warn: "该产品已被登记为有害食品，通关时被拦截/销毁的可能性非常高。",
+    match_title: "一次成分匹配", high_label: "危险", med_label: "注意",
+    ai_title: "🤖 AI精密检测", ai_loading: "AI正在分析...",
+    safe_h: "一次检测通过", safe_p1: "成分文本中未检测到禁止成分。",
+    safe_p2: "可能存在标签未标注的成分，最终判断由海关决定。",
+    no_detect: "未检测到禁止成分",
+    db_found: "在有害食品数据库中发现该产品",
+    detect_n: "检测到{n}个禁止/注意成分",
+    pricing_h: "价格方案", pricing_sub: "含3次免费体验·不含税", pricing_rec: "推荐", pricing_select: "选择",
+    s1: "有害食品数据库", s2: "禁止成分追踪中", s3: "AI检测时间",
+    step1: "输入成分", step1d: "粘贴文本或上传成分表图片",
+    step2: "图片检测", step2d: "AI自动提取照片中的成分表文本",
+    step3: "风险扫描", step3d: "自动对比禁止成分数据库 + AI分析",
+    step4: "检测报告", step4d: "即时提供包含风险等级和依据的结果",
+    disclaimer: "⚠️ 免责声明：本检测结果仅供参考，不构成法律建议。最终通关判断由各国海关及监管机构决定。数据库可能不包含所有最新规制信息。",
   },
 };
  
@@ -383,16 +425,57 @@ export default function App() {
     if (d.length > 0) runAi(ingredients, d);
   }
  
+  const COUNTRY_CONTEXT = {
+    kr: { agency: "한국 식약처(MFDS)", rule: "해외직구 위해식품 차단 목록에 등재된 금지/주의 성분", examples: "L-Citrulline, Melatonin, 5-HTP, Yohimbine, DHEA 등은 해외에서 일반적이지만 한국에서는 금지", flag: "🇰🇷" },
+    jp: { agency: "일본 후생노동성(MHLW)", rule: "의약품 성분으로 분류되어 식품 사용 금지 또는 수입 규제 대상", examples: "Melatonin, DHEA, 5-HTP 등은 일본에서 의약품 성분으로 분류. Sibutramine, Fenfluramine 검출 제품은 판매 금지", flag: "🇯🇵" },
+    us: { agency: "미국 FDA", rule: "Tainted Supplements 목록 등재 또는 DSHEA 위반으로 경고/리콜 대상", examples: "Sildenafil, Tadalafil 은닉 제품은 FDA 경고 대상. DMAA, Ephedra는 판매 금지", flag: "🇺🇸" },
+    eu: { agency: "EU RASFF (유럽식품안전경보시스템)", rule: "Novel Food 규정 위반, 금지 성분 검출, 또는 오염 물질 기준 초과", examples: "CBD는 Novel Food 미승인으로 규제. Sibutramine, DMAA 함유 제품은 RASFF 경고. Kratom, Phenibut은 다수 회원국에서 금지", flag: "🇪🇺" },
+  };
+ 
   async function runAi(text, detected) {
     setAiLoading(true);
     const highList = detected.filter(d => d.risk === "high").map(d => d.name).join(", ");
     const medList = detected.filter(d => d.risk === "med").map(d => d.name).join(", ");
+    const cc = COUNTRY_CONTEXT[country] || COUNTRY_CONTEXT.kr;
     try {
       const res = await fetch("/api/claude", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 800,
-          messages: [{ role: "user", content: `당신은 한국 식약처(MFDS) 해외직구 위해식품 통관 전문가입니다.\n\n중요 규칙:\n1. 아래 성분들은 한국 식약처 "해외직구 위해식품 차단 목록"에 실제 등재된 금지/주의 성분입니다.\n2. 해외에서는 일반 보충제로 판매되더라도, 한국 통관 기준으로는 금지입니다.\n3. 1차 매칭에서 검출된 성분을 "안전하다"고 뒤집으려면, 반드시 해당 성분명이 다른 단어의 일부(예: "pea"가 "pea protein"의 일부)인 경우에만 가능합니다.\n4. L-Citrulline, Melatonin, 5-HTP, Yohimbine 등은 해외에서 일반적이지만 한국에서는 금지 성분입니다. 이런 성분을 "안전"으로 분류하지 마세요.\n\n[위험 등급 성분 (통관 차단 대상)]: ${highList || "없음"}\n[주의 등급 성분 (통관 주의 대상)]: ${medList || "없음"}\n\n[제품 성분 텍스트]:\n${text.substring(0,1500)}\n\n아래 양식으로만 한국어로 답변하세요:\n\n🔍 AI 정밀 판독\n\n[위험 성분]\n• 성분명 — 한국 식약처 기준 금지/주의 사유 (1줄)\n\n[가짜 알람 (안전)]\n• 성분명 — 다른 단어의 일부이므로 안전 (1줄)\n(해당 없으면 "없음"으로 표시)\n\n[종합]\n통관 위험도: 높음/중간/낮음\n근거: (1줄)` }],
+          model: "claude-sonnet-4-20250514", max_tokens: 1000,
+          messages: [{ role: "user", content: `당신은 해외직구 통관 리스크 전문가입니다.
+ 
+[수입국]: ${cc.flag} ${cc.agency}
+[규제 기준]: ${cc.rule}
+[참고]: ${cc.examples}
+ 
+중요 규칙:
+1. 아래 성분들은 해당 국가에서 금지/주의 대상입니다.
+2. 해외에서 일반 보충제로 판매되더라도, 수입국 기준으로는 규제 대상입니다.
+3. 1차 매칭에서 검출된 성분을 "안전"으로 뒤집으려면, 해당 성분명이 다른 단어의 일부인 경우에만 가능합니다.
+ 
+[위험 등급 성분]: ${highList || "없음"}
+[주의 등급 성분]: ${medList || "없음"}
+ 
+[제품 성분 텍스트]:
+${text.substring(0, 1500)}
+ 
+아래 양식으로만 한국어로 답변하세요:
+ 
+🔍 AI 정밀 판독 (${cc.flag} ${cc.agency} 기준)
+ 
+[위험 성분]
+• 성분명 — ${cc.agency} 기준 금지/주의 사유 (1줄)
+ 
+[가짜 알람 (안전)]
+• 성분명 — 다른 단어의 일부이므로 안전 (1줄)
+(해당 없으면 "없음")
+ 
+[국가별 규제 참고]
+• ${cc.flag} 해당 국가: 규제 상태 요약 (1줄)
+ 
+[종합]
+통관 위험도: 높음/중간/낮음
+근거: (1줄)` }],
         }),
       });
       const data = await res.json();
@@ -434,7 +517,7 @@ export default function App() {
   /* ─── Language selector component ─── */
   const LangSel = () => (
     <div style={{ display:"flex", gap:2, background:"var(--surface2)", borderRadius:6, padding:2, marginLeft:8 }}>
-      {[{c:"ko",l:"한"},{c:"en",l:"EN"},{c:"ja",l:"JP"}].map(x => (
+      {[{c:"ko",l:"한"},{c:"en",l:"EN"},{c:"ja",l:"JP"},{c:"zh",l:"中"}].map(x => (
         <button key={x.c} onClick={() => setLang(x.c)} style={{
           padding:"4px 9px", borderRadius:5, border:"none", fontSize:11, fontWeight:700,
           background:lang===x.c?"var(--accent)":"transparent", color:lang===x.c?"#fff":"var(--text2)",
@@ -870,6 +953,13 @@ export default function App() {
                 <p style={{ fontSize:12, color:"var(--text2)", lineHeight:1.6 }}>{t.safe_p1}<br/>{t.safe_p2}</p>
               </div>
             )}
+ 
+            {/* Disclaimer */}
+            <div style={{ marginTop:16, padding:"14px 18px", borderRadius:12, background:"rgba(245,158,11,0.04)", border:"1px solid rgba(245,158,11,0.12)" }}>
+              <p style={{ fontSize:11, color:"#D97706", lineHeight:1.7, fontWeight:500 }}>
+                {t.disclaimer || "⚠️ 면책 고지: 본 판독 결과는 참고 자료이며 법적 효력이 없습니다. 최종 통관 여부는 각국 세관 및 규제 기관의 판단에 따릅니다."}
+              </p>
+            </div>
           </div>
         )}
       </div>
