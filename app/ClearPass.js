@@ -412,7 +412,7 @@ export default function App() {
     if (productName.trim()) {
       setDbSearching(true);
       try {
-        const res = await fetch("/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productName: productName.trim() }) });
+        const res = await fetch("/api/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productName: productName.trim(), targetCountry: country }) });
         const data = await res.json();
         if (data.matches?.length > 0) { dbResults = data.matches; setDbMatches(data.matches); }
       } catch (err) { console.error("DB search error:", err); }
