@@ -1,6 +1,6 @@
 export async function POST(request) {
   try {
-    const { productName } = await request.json();
+    const { productName, targetCountry } = await request.json();
  
     if (!productName || !productName.trim()) {
       return new Response(JSON.stringify({ matches: [] }), {
@@ -21,8 +21,22 @@ export async function POST(request) {
  
     const searchTerm = productName.trim().toLowerCase();
  
-    // Supabase REST API로 제품명 검색 (ILIKE = 대소문자 무시 부분 검색)
-    const url = `${SUPABASE_URL}/rest/v1/hazardous_products?product_name=ilike.*${encodeURIComponent(searchTerm)}*&select=id,product_name,detected_ingredient,detected_ingredient_kr,manufacturer,origin_country,status,source,target_country&limit=10`;
+    // Map country code to target_country value in DB
+    const countryMap = {
+      kr: "한국",
+      jp: "일본",
+      us: "미국",
+      eu: "EU",
+    };
+    const countryFilter = countryMap[targetCountry] || "";
+ 
+    // Build Supabase REST API URL with country filter
+    let url = `${SUPABASE_URL}/rest/v1/hazardous_products?product_name=ilike.*${encodeURIComponent(searchTerm)}*&select=id,product_name,detected_ingredient,detected_ingredient_kr,manufacturer,origin_country,status,source,target_country&limit=10`;
+ 
+    // Add country filter if specified
+    if (countryFilter) {
+      url += `&target_country=eq.${encodeURIComponent(countryFilter)}`;
+    }
  
     const res = await fetch(url, {
       headers: {
@@ -64,3 +78,4 @@ export async function POST(request) {
     });
   }
 }
+ 
