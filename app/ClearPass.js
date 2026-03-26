@@ -148,7 +148,7 @@ const LANG = {
     step2: "이미지 판독", step2d: "AI가 사진 속 성분표 텍스트를 자동 추출",
     step3: "위험 성분 스캔", step3d: "157개 금지 성분 DB와 자동 대조 + AI 분석",
     step4: "판정 리포트", step4d: "위험도 등급과 근거가 포함된 즉시 결과 제공",
-    disclaimer: "⚠️ 면책 고지: 본 판독 결과는 참고 자료이며 법적 효력이 없습니다. 최종 통관 여부는 각국 세관 및 규제 기관의 판단에 따릅니다. 데이터베이스에 최신 규제 정보가 반영되지 않았을 수 있습니다.",
+    disclaimer: "본 판독 결과는 참고 자료이며 법적 효력이 없습니다. 최종 통관 여부는 각국 세관 및 규제 기관의 판단에 따릅니다. 데이터베이스에 최신 규제 정보가 반영되지 않았을 수 있습니다.",
   },
   en: {
     check: "Start Scan", pricing_btn: "Pricing", hero_badge: "Based on 5,482 hazardous product records from 4 countries",
@@ -189,7 +189,7 @@ const LANG = {
     step2: "Image Scan", step2d: "AI extracts ingredient text from photos",
     step3: "Risk Scan", step3d: "Auto-match against banned ingredient database + AI",
     step4: "Report", step4d: "Instant results with risk level and evidence",
-    disclaimer: "⚠️ Disclaimer: These results are for reference only and have no legal effect. Final customs decisions are made by each country's customs and regulatory authorities. The database may not reflect the latest regulatory information.",
+    disclaimer: "These results are for reference only and have no legal effect. Final customs decisions are made by each country's customs and regulatory authorities. The database may not reflect the latest regulatory information.",
   },
   ja: {
     check: "判定開始", pricing_btn: "料金", hero_badge: "4カ国の有害食品DB 5,482件に基づく",
@@ -228,7 +228,7 @@ const LANG = {
     step2: "画像判定", step2d: "AIが写真から成分表テキストを自動抽出",
     step3: "リスクスキャン", step3d: "禁止成分DBと自動照合 + AI分析",
     step4: "判定結果", step4d: "リスクレベルと根拠を含む即時結果",
-    disclaimer: "⚠️ 免責事項：本判定結果は参考資料であり、法的効力はありません。最終的な通関判断は各国の税関および規制当局に委ねられます。データベースに最新の規制情報が反映されていない場合があります。",
+    disclaimer: "本判定結果は参考資料であり、法的効力はありません。最終的な通関判断は各国の税関および規制当局に委ねられます。データベースに最新の規制情報が反映されていない場合があります。",
   },
   zh: {
     check: "开始检测", pricing_btn: "价格", hero_badge: "基于4国有害食品数据库5,482条记录",
@@ -267,7 +267,7 @@ const LANG = {
     step2: "图片检测", step2d: "AI自动提取照片中的成分表文本",
     step3: "风险扫描", step3d: "自动对比禁止成分数据库 + AI分析",
     step4: "检测报告", step4d: "即时提供包含风险等级和依据的结果",
-    disclaimer: "⚠️ 免责声明：本检测结果仅供参考，不构成法律建议。最终通关判断由各国海关及监管机构决定。数据库可能不包含所有最新规制信息。",
+    disclaimer: "本检测结果仅供参考，不构成法律建议。最终通关判断由各国海关及监管机构决定。数据库可能不包含所有最新规制信息。",
   },
 };
  
@@ -887,32 +887,78 @@ ${text.substring(0, 1500)}
               </h2>
             </div>
  
-            {/* DB Matches */}
-            {results.dbMatches?.length > 0 && (
+            {/* DB Matches - Cross Country */}
+            {results.dbMatches?.length > 0 && (() => {
+              const selCode = country;
+              const selName = {kr:"한국",jp:"일본",us:"미국",eu:"EU"}[selCode] || "한국";
+              const selFlag = {kr:"🇰🇷",jp:"🇯🇵",us:"🇺🇸",eu:"🇪🇺"}[selCode] || "🌐";
+              const flagOf = (c) => c==="한국"?"🇰🇷":c==="미국"?"🇺🇸":c==="일본"?"🇯🇵":c==="EU"?"🇪🇺":"🌐";
+              const sameCountry = results.dbMatches.filter(m => m.targetCountry === selName);
+              const otherCountry = results.dbMatches.filter(m => m.targetCountry !== selName);
+              return (
               <div style={{ background:"#1C0A0A", border:"1px solid rgba(239,68,68,0.2)", borderRadius:16, padding:20, marginBottom:16 }}>
                 <h3 style={{ fontSize:14, fontWeight:700, marginBottom:14, color:"#FCA5A5", letterSpacing:"0.02em" }}>{t.db_title}</h3>
-                {results.dbMatches.map((m, i) => (
-                  <div key={i} style={{ padding:"12px 14px", marginBottom:8, borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.12)" }}>
+                
+                {/* Same country matches */}
+                {sameCountry.map((m, i) => (
+                  <div key={`s${i}`} style={{ padding:"12px 14px", marginBottom:8, borderRadius:10, background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
                       <span style={{ fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:5, background:"#991B1B", color:"#fff" }}>{t.db_label}</span>
                       <span style={{ fontSize:14, fontWeight:700, color:"#FCA5A5" }}>{m.productName}</span>
+                      <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:4, background:"#DC2626", color:"#fff" }}>{selFlag} {selName} 차단 대상</span>
                     </div>
-                    <div style={{ display:"flex", gap:16, flexWrap:"wrap", fontSize:12, color:"var(--text2)" }}>
+                    <div style={{ display:"flex", gap:12, flexWrap:"wrap", fontSize:12, color:"var(--text2)" }}>
                       {m.detectedIngredient && <span>검출성분: <strong style={{ color:"#EF4444" }}>{m.detectedIngredient}</strong>{m.detectedIngredientKr && ` (${m.detectedIngredientKr})`}</span>}
                       {m.manufacturer && <span>제조사: {m.manufacturer}</span>}
                       {m.country && <span>제조국: {m.country}</span>}
                       {m.source && <span>출처: {m.source}</span>}
-                      {m.targetCountry && (
-                        <span style={{ padding:"2px 8px", borderRadius:4, background:"rgba(239,68,68,0.15)", color:"#FCA5A5", fontWeight:600, fontSize:11 }}>
-                          {m.targetCountry === "한국" ? "🇰🇷" : m.targetCountry === "미국" ? "🇺🇸" : m.targetCountry === "일본" ? "🇯🇵" : m.targetCountry === "EU" ? "🇪🇺" : "🌐"} {m.targetCountry} 통관 차단 대상
-                        </span>
-                      )}
                     </div>
                   </div>
                 ))}
-                <p style={{ fontSize:11, color:"#FCA5A5", marginTop:8, opacity:0.7 }}>{t.db_warn}</p>
+ 
+                {/* Other country matches */}
+                {otherCountry.length > 0 && (
+                  <div style={{ marginTop: sameCountry.length > 0 ? 12 : 0 }}>
+                    {sameCountry.length === 0 && otherCountry.length > 0 && (
+                      <div style={{ padding:"10px 14px", marginBottom:10, borderRadius:8, background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.15)" }}>
+                        <p style={{ fontSize:12, color:"#FDE68A", fontWeight:600 }}>
+                          ⚠️ {selFlag} {selName} DB에는 직접 등록되어 있지 않으나, 다른 국가에서 위해식품으로 등록된 제품입니다.
+                        </p>
+                      </div>
+                    )}
+                    {otherCountry.map((m, i) => {
+                      const ings = (m.detectedIngredient || "").toLowerCase().split(/[;,/]+/).map(s => s.trim()).filter(Boolean);
+                      const bannedIngs = ings.filter(ing => BANNED.some(b => ing.includes(b) || b.includes(ing)));
+                      const isBannedHere = bannedIngs.length > 0;
+                      return (
+                      <div key={`o${i}`} style={{ padding:"12px 14px", marginBottom:8, borderRadius:10, background: isBannedHere ? "rgba(239,68,68,0.06)" : "rgba(245,158,11,0.04)", border: `1px solid ${isBannedHere ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.12)"}` }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, flexWrap:"wrap" }}>
+                          <span style={{ fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:5, background:"#92400E", color:"#fff" }}>{flagOf(m.targetCountry)} {m.targetCountry}</span>
+                          <span style={{ fontSize:14, fontWeight:600, color: isBannedHere ? "#FCA5A5" : "#FDE68A" }}>{m.productName}</span>
+                          {isBannedHere && <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:4, background:"#DC2626", color:"#fff" }}>{selFlag} {selName}에서도 금지</span>}
+                        </div>
+                        <div style={{ display:"flex", gap:12, flexWrap:"wrap", fontSize:12, color:"var(--text2)" }}>
+                          {m.detectedIngredient && <span>검출성분: <strong style={{ color: isBannedHere ? "#EF4444" : "#F59E0B" }}>{m.detectedIngredient}</strong>{m.detectedIngredientKr && ` (${m.detectedIngredientKr})`}</span>}
+                          {m.manufacturer && <span>제조사: {m.manufacturer}</span>}
+                          {m.country && <span>제조국: {m.country}</span>}
+                          {m.source && <span>출처: {m.source}</span>}
+                        </div>
+                        <p style={{ fontSize:11, color: isBannedHere ? "#FCA5A5" : "#FDE68A", marginTop:6, opacity:0.9 }}>
+                          {isBannedHere
+                            ? `🚨 이 제품은 ${flagOf(m.targetCountry)} ${m.targetCountry}에서 ${m.detectedIngredient} 때문에 차단되었으며, ${selFlag} ${selName}에서도 동일 성분(${bannedIngs.join(", ")})이 금지 성분입니다. 통관 차단 가능성이 높습니다.`
+                            : `→ 이 제품은 ${flagOf(m.targetCountry)} ${m.targetCountry}에서 ${m.detectedIngredient || "금지 성분"} 때문에 차단되었습니다. ${selFlag} ${selName} 규제 여부를 추가 확인하시기 바랍니다.`
+                          }
+                        </p>
+                      </div>
+                      );
+                    })}
+                  </div>
+                )}
+ 
+                <p style={{ fontSize:11, color:"#FCA5A5", marginTop:10, opacity:0.7 }}>{t.db_warn}</p>
               </div>
-            )}
+              );
+            })()}
  
             {results.detected.length > 0 && (
               <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:16, padding:20, marginBottom:16 }}>
@@ -957,7 +1003,7 @@ ${text.substring(0, 1500)}
             {/* Disclaimer */}
             <div style={{ marginTop:16, padding:"14px 18px", borderRadius:12, background:"rgba(245,158,11,0.04)", border:"1px solid rgba(245,158,11,0.12)" }}>
               <p style={{ fontSize:11, color:"#D97706", lineHeight:1.7, fontWeight:500 }}>
-                {t.disclaimer || "⚠️ 면책 고지: 본 판독 결과는 참고 자료이며 법적 효력이 없습니다. 최종 통관 여부는 각국 세관 및 규제 기관의 판단에 따릅니다."}
+                {t.disclaimer || "본 판독 결과는 참고 자료이며 법적 효력이 없습니다. 최종 통관 여부는 각국 세관 및 규제 기관의 판단에 따릅니다."}
               </p>
             </div>
           </div>
@@ -966,3 +1012,4 @@ ${text.substring(0, 1500)}
     </div>
   );
 }
+ 
