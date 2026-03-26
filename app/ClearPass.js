@@ -46,7 +46,14 @@ const BANNED = [
   "kava","kava kava","akuamma","amanita muscaria",
   "곤약","구연산실데나필","디폭세틴","우피","음양곽","인도사목","클로람페니콜","테오필린",
   "시부트라민","멜라토닌","에페드라","요힘빈","센노사이드","실데나필","타다라필",
-  "페니부트","페놀프탈레인","덱사메타손","프레드니솔론"
+  "페니부트","페놀프탈레인","덱사메타손","프레드니솔론",
+  "펜플루라민","리모나반트","로카세린","오를리스타트","디니트로페놀",
+  "바르데나필","아바나필","플리반세린","호모실데나필",
+  "라드140","테스토론","리간드롤","오스타린","카다린",
+  "크라톰","카바","모다피닐","티아넵틴","피라세탐",
+  "에페드린","슈도에페드린","코데인","덱스트로메토르판",
+  "디클로페낙","리도카인","세티리진","로라타딘","디펜히드라민",
+  "프로메타진","독시라민","펙소페나딘","구아이페네신"
 ];
 const HIGH = new Set(["sildenafil","tadalafil","sibutramine","s4","andarine","sr-9009","ostarine",
   "lgd-4033","mk-677","mk 2866","yk-11","gw 501516","cardarine","stenabolic","nutrabol",
@@ -60,7 +67,8 @@ const HIGH = new Set(["sildenafil","tadalafil","sibutramine","s4","andarine","sr
   "rad-140","rad 140","testolone","ibutamoren","ligandrol","enobosarm","s-23",
   "lorcaserin","rimonabant","fenfluramine","dinitrophenol","dnp","2,4-dinitrophenol",
   "codeine","modafinil","armodafinil","pseudoephedrine","kratom","시부트라민","실데나필","타다라필",
-  "tianeptine","promethazine"]);
+  "tianeptine","promethazine","펜플루라민","리모나반트","오를리스타트","디니트로페놀",
+  "바르데나필","호모실데나필","크라톰","모다피닐","티아넵틴","코데인","슈도에페드린","프로메타진"]);
  
 function detect(text) {
   if (!text?.trim()) return [];
@@ -811,6 +819,11 @@ export default function App() {
                       {m.manufacturer && <span>제조사: {m.manufacturer}</span>}
                       {m.country && <span>제조국: {m.country}</span>}
                       {m.source && <span>출처: {m.source}</span>}
+                      {m.targetCountry && (
+                        <span style={{ padding:"2px 8px", borderRadius:4, background:"rgba(239,68,68,0.15)", color:"#FCA5A5", fontWeight:600, fontSize:11 }}>
+                          {m.targetCountry === "한국" ? "🇰🇷" : m.targetCountry === "미국" ? "🇺🇸" : m.targetCountry === "일본" ? "🇯🇵" : m.targetCountry === "EU" ? "🇪🇺" : "🌐"} {m.targetCountry} 통관 차단 대상
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
